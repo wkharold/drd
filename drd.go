@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/wkharold/dr"
 )
@@ -11,12 +12,28 @@ import (
 var (
 	fladdr      = flag.String("addr", ":3080", "registry address")
 	fltelemetry = flag.Bool("telemetry", false, "provide service telemetry")
+	fllogfile   = flag.String("log", "", "access log")
 )
 
 func main() {
 	flag.Parse()
 
-	dr, err := dr.New(dr.Context{*fltelemetry})
+	ctx := dr.Context{Telemetry: *fltelemetry}
+
+	if len(*fllogfile) > 0 {
+		switch *fllogfile {
+		case "stdout":
+			ctx.AccessOut = os.Stdout
+		default:
+			lf, err := os.Open(*fllogfile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			ctx.AccessOut = lf
+		}
+	}
+
+	dr, err := dr.New(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
